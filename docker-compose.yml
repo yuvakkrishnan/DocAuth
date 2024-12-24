@@ -1,0 +1,16 @@
+version: "3.9"
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - AWS_REGION=ap-south-1
+      - S3_BUCKET=protectdocs
+    networks:
+      - app-network
+networks:
+  app-network:
+    driver: bridge
