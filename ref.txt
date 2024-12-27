@@ -1,0 +1,87 @@
+// package utils
+
+// import (
+//     "bytes"
+//     "crypto/aes"
+//     "crypto/cipher"
+//     "crypto/rand"
+//     "encoding/base64"
+//     "errors"
+//     "log"
+// )
+
+// func GenerateAESKey() (string, error) {
+//     key := make([]byte, 32) // AES-256 key size
+//     _, err := rand.Read(key)
+//     if err != nil {
+//         return "", err
+//     }
+//     return base64.StdEncoding.EncodeToString(key), nil
+// }
+
+// func EncryptAES(content []byte, key []byte) ([]byte, error) {
+//     block, err := aes.NewCipher(key)
+//     if err != nil {
+//         return nil, err
+//     }
+
+//     // Add padding
+//     padding := aes.BlockSize - len(content)%aes.BlockSize
+//     padtext := bytes.Repeat([]byte{byte(padding)}, padding)
+//     content = append(content, padtext...)
+
+//     ciphertext := make([]byte, aes.BlockSize+len(content))
+//     iv := ciphertext[:aes.BlockSize]
+//     if _, err := rand.Read(iv); err != nil {
+//         return nil, err
+//     }
+
+//     mode := cipher.NewCBCEncrypter(block, iv)
+//     mode.CryptBlocks(ciphertext[aes.BlockSize:], content)
+
+//     return ciphertext, nil
+// }
+
+// func DecryptAES(encryptedData []byte, key []byte) ([]byte, error) {
+//     log.Println("Starting decryption process")
+
+//     block, err := aes.NewCipher(key)
+//     if err != nil {
+//         log.Printf("Error creating cipher block: %v", err)
+//         return nil, err
+//     }
+
+//     if len(encryptedData) < aes.BlockSize {
+//         log.Println("Encrypted data is too short")
+//         return nil, errors.New("encrypted data is too short")
+//     }
+
+//     iv := encryptedData[:aes.BlockSize]
+//     encryptedData = encryptedData[aes.BlockSize:]
+
+//     if len(encryptedData)%aes.BlockSize != 0 {
+//         log.Println("Encrypted data is not a multiple of the block size")
+//         return nil, errors.New("encrypted data is not a multiple of the block size")
+//     }
+
+//     mode := cipher.NewCBCDecrypter(block, iv)
+//     mode.CryptBlocks(encryptedData, encryptedData)
+
+//     // Remove padding
+//     padding := int(encryptedData[len(encryptedData)-1])
+//     if padding > aes.BlockSize || padding == 0 {
+//         log.Println("Invalid padding")
+//         return nil, errors.New("invalid padding")
+//     }
+
+//     for i := 0; i < padding; i++ {
+//         if encryptedData[len(encryptedData)-1-i] != byte(padding) {
+//             log.Println("Invalid padding")
+//             return nil, errors.New("invalid padding")
+//         }
+//     }
+
+//     decryptedData := encryptedData[:len(encryptedData)-padding]
+//     log.Println("Decryption process completed successfully")
+//     return decryptedData, nil
+// }
