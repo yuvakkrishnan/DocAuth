@@ -3,17 +3,15 @@ package utils
 import (
     "crypto/rand"
     "encoding/base64"
-    "strings"
 )
 
 func GenerateAESKey() (string, error) {
-    key := make([]byte, 32) // AES-256 key size
+    key := make([]byte, 32) // AES-256 key size (32 bytes)
     if _, err := rand.Read(key); err != nil {
         return "", err
     }
 
-    // Trim and encode to ensure valid Base64
-    keyStr := base64.StdEncoding.EncodeToString(key)
-    keyStr = strings.TrimSpace(keyStr)
-    return keyStr, nil
+    // Encode the key to base64
+    encodedKey := base64.StdEncoding.EncodeToString(key)
+    return encodedKey, nil
 }

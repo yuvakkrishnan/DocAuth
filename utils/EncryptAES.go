@@ -1,11 +1,10 @@
 package utils
 
 import (
+    "bytes"
     "crypto/aes"
+    "crypto/cipher"
     "crypto/rand"
-	"bytes"
-	"crypto/cipher"
-
 )
 
 func EncryptAES(content []byte, key []byte) ([]byte, error) {

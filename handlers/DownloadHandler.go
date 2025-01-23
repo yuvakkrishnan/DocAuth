@@ -1,60 +1,70 @@
 package handlers
 
 import (
-    "encoding/base64"
-    "net/http"
-    "net/url"
-    "strings"
-    "github.com/yuvakkrishnan/backend/utils"
-    "github.com/yuvakkrishnan/backend/logger"
+	"encoding/base64"
+	"net/http"
+	"strings"
+
+	"github.com/gorilla/mux"
+	"github.com/yuvakkrishnan/backend/logger"
+	"github.com/yuvakkrishnan/backend/utils"
 )
 
 func DownloadHandler(logger *logger.Logger) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        filename := r.URL.Query().Get("filename")
-        key := r.URL.Query().Get("key")
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Use mux.Vars to get path parameters
+		vars := mux.Vars(r)
+		filename := vars["filename"]
 
-        if filename == "" || key == "" {
-            logger.Error("Missing filename or encryption key")
-            http.Error(w, "Missing filename or encryption key", http.StatusBadRequest)
-            return
-        }
+		key := r.URL.Query().Get("key")
+		if filename == "" || key == "" {
+			logger.Error("Missing filename or encryption key")
+			http.Error(w, "Missing filename or encryption key", http.StatusBadRequest)
+			return
+		}
 
-        // Trim spaces and unescape URL-encoded characters
-        key = strings.TrimSpace(key)
-        key, err := url.QueryUnescape(key)
-        if err != nil {
-            logger.Error("Failed to unescape encryption key: " + err.Error())
-            http.Error(w, "Failed to unescape encryption key", http.StatusBadRequest)
-            return
-        }
+		// Remove all whitespace characters (spaces, tabs, newlines, etc.)
+		key = strings.Map(func(r rune) rune {
+			if r == ' ' || r == '\t' || r == '\n' || r == '\r' {
+				return -1
+			}
+			return r
+		}, key)
 
-        logger.Info("Received raw key: " + key)
+		logger.Info("Sanitized key: " + key)
+		logger.Infof("Key length: %d", len(key))
 
-        keyBytes, err := base64.StdEncoding.DecodeString(key)
-        if err != nil {
-            logger.Error("Failed to decode encryption key: " + err.Error())
-            http.Error(w, "Invalid encryption key", http.StatusBadRequest)
-            return
-        }
+		// Check if the key is a valid base64 string
+		if !utils.IsValidBase64(key) {
+			logger.Error("Invalid encryption key format")
+			http.Error(w, "Invalid encryption key format", http.StatusBadRequest)
+			return
+		}
 
-        encryptedContent, err := downloadFromS3(filename)
-        if err != nil {
-            logger.Error("Failed to download file from S3: " + err.Error())
-            http.Error(w, "Failed to download file", http.StatusInternalServerError)
-            return
-        }
+		// Decode the key from base64
+		keyBytes, err := base64.StdEncoding.DecodeString(key)
+		if err != nil {
+			logger.Error("Failed to decode encryption key: " + err.Error())
+			http.Error(w, "Invalid encryption key", http.StatusBadRequest)
+			return
+		}
 
-        decryptedContent, err := utils.DecryptAES(encryptedContent, keyBytes, logger)
-        if err != nil {
-            logger.Error("Failed to decrypt content: " + err.Error())
-            http.Error(w, "Failed to decrypt content", http.StatusInternalServerError)
-            return
-        }
+		encryptedContent, err := downloadFromS3(filename)
+		if err != nil {
+			logger.Error("Failed to download file from S3: " + err.Error())
+			http.Error(w, "Failed to download file", http.StatusInternalServerError)
+			return
+		}
 
-        // Write the decrypted content to the response
-        w.Header().Set("Content-Disposition", "attachment; filename="+filename)
-        w.Header().Set("Content-Type", "application/octet-stream")
-        w.Write(decryptedContent)
-    }
+		decryptedContent, err := utils.DecryptAES(encryptedContent, keyBytes, logger)
+		if err != nil {
+			logger.Error("Failed to decrypt content: " + err.Error())
+			http.Error(w, "Failed to decrypt content", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Disposition", "attachment;filename="+filename)
+		w.Header().Set("Content-Type", "application/octet-stream")
+		w.Write(decryptedContent)
+	}
 }
