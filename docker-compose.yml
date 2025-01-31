@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - "9090:9090"
     environment:
       - AWS_REGION=ap-south-1
       - S3_BUCKET=protectdocs
